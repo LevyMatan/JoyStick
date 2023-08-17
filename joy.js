@@ -54,6 +54,7 @@ let StickStatus =
     cardinalDirection: "C"
 };
 
+var activeJoystick = null;
 /**
  * @desc Principal object that draw a joystick, you only need to initialize the object and suggest the HTML container
  * @costructor
@@ -177,12 +178,13 @@ var JoyStick = (function(container, parameters, callback)
      */
     function onTouchStart(event) 
     {
+        this.activeJoystick = true;
         pressed = 1;
     }
 
     function onTouchMove(event)
     {
-        if(pressed === 1 && event.targetTouches[0].target === canvas)
+        if(pressed === 1 && event.targetTouches[0].target === canvas && this.activeJoystick === true)
         {
             movedX = event.targetTouches[0].pageX;
             movedY = event.targetTouches[0].pageY;
@@ -216,25 +218,30 @@ var JoyStick = (function(container, parameters, callback)
     function onTouchEnd(event) 
     {
         pressed = 0;
-        // If required reset position store variable
-        if(autoReturnToCenter)
+        if(this.activeJoystick === true)
         {
-            movedX = centerX;
-            movedY = centerY;
+            
+            this.activeJoystick = false;
+            // If required reset position store variable
+            if(autoReturnToCenter)
+            {
+                movedX = centerX;
+                movedY = centerY;
+            }
+            // Delete canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            // Redraw object
+            drawExternal();
+            drawInternal();
+    
+            // Set attribute of callback
+            StickStatus.xPosition = movedX;
+            StickStatus.yPosition = movedY;
+            StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
+            StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
+            StickStatus.cardinalDirection = getCardinalDirection();
+            callback(StickStatus);
         }
-        // Delete canvas
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        // Redraw object
-        drawExternal();
-        drawInternal();
-
-        // Set attribute of callback
-        StickStatus.xPosition = movedX;
-        StickStatus.yPosition = movedY;
-        StickStatus.x = (100*((movedX - centerX)/maxMoveStick)).toFixed();
-        StickStatus.y = ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
-        StickStatus.cardinalDirection = getCardinalDirection();
-        callback(StickStatus);
     }
 
     /**
